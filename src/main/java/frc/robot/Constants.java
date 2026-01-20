@@ -8,12 +8,15 @@ import static edu.wpi.first.units.Units.*;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.units.AngleUnit;
 import edu.wpi.first.units.AngularVelocityUnit;
 import edu.wpi.first.units.DistanceUnit;
 import edu.wpi.first.units.LinearVelocityUnit;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularAcceleration;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.Frequency;
 import edu.wpi.first.units.measure.LinearAcceleration;
 import edu.wpi.first.units.measure.LinearVelocity;
@@ -75,5 +78,22 @@ public final class Constants {
 
     public static LinearVelocity translationalDeadband = MetersPerSecond.of(0.01);
     public static AngularVelocity rotationalDeadband = RadiansPerSecond.of(0.01);
+  }
+
+  public static class TurretConstants {
+    public static final Distance DistanceFromFunnel = Meters.of(1.5);
+    public static final Translation3d turretOffset = new Translation3d(
+          Meters.of(0.2),
+          Meters.of(0.0),
+          Meters.of(1.0)
+        );
+    public static final Distance highestHeight = Meters.of(2.5);
+    public static final Distance flywheelRadius = Meters.of(0.5);
+    public static final Distance shooterRadius = Meters.of(0.25);
+    
+    // Shot calculation parameters based on your Desmos math
+    public static final LinearVelocity BASE_VELOCITY = MetersPerSecond.of(31); // From your Desmos v=31
+    public static final Angle THETA_ERROR = Radians.of(Math.toRadians(3)); // θ_error from Desmos
+    public static final LinearVelocity VELOCITY_ERROR = MetersPerSecond.of(1.5); // v_error from Desmos
   }
 }

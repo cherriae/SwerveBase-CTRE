@@ -431,7 +431,7 @@ public class VisionPoseEstimatorTest {
 
     assert estimate.isValid();
 
-    // everything alr checked in singleTagEstimate, so just checking disambiguation here ⤵
+    // everything alr checked in singleTagEstimate, so just checking disambiguation here 
 
     var closerError =
         estimate.pose().getRotation().toRotation2d().minus(dummyGyroHeading(estimate.timestamp()));

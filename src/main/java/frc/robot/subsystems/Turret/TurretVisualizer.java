@@ -1,26 +1,28 @@
 package frc.robot.subsystems.Turret;
 
-import java.util.ArrayList;
-import java.util.function.Supplier;
+import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.Radians;
 
 import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.LinearVelocity;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
+import java.util.ArrayList;
+import java.util.function.Supplier;
 
-import static edu.wpi.first.units.Units.MetersPerSecond;
-import static edu.wpi.first.units.Units.Radians;
-
+/** Add your docs here. */
 public class TurretVisualizer {
-    @Logged(name="FuelPositions")
-    private ArrayList<Translation3d> fuel = new ArrayList<Translation3d>();
-    @Logged(name="FuelVelocities")
-    private ArrayList<Translation3d> fuelVelocity = new ArrayList<Translation3d>();
-    @Logged(name="FuelTrajectory")
-    private Translation3d[] trajectory = new Translation3d[50]; //last 1 second of trajectory points
-    
+    @Logged(name = "Fuel")
+    public ArrayList<Translation3d> fuel = new ArrayList<Translation3d>();
+    @Logged(name = "FuelVelocities")
+    public ArrayList<Translation3d> fuelVelocities = new ArrayList<Translation3d>();
+    @Logged(name = "Trajectory")
+    public Translation3d[] trajectory = new Translation3d[50];
     
     private Supplier<Pose3d> poseSupplier;
     private Supplier<ChassisSpeeds> fieldSpeedsSupplier;
@@ -30,68 +32,84 @@ public class TurretVisualizer {
         this.fieldSpeedsSupplier = fieldSpeedsSupplier;
     }
 
-    private Translation3d launchVel(LinearVelocity velocity, Angle angle) {
-        Pose3d robotPose = poseSupplier.get();
+    private Translation3d launchVel(LinearVelocity vel, Angle angle) {
+        Pose3d robot = poseSupplier.get();
         ChassisSpeeds fieldSpeeds = fieldSpeedsSupplier.get();
 
-        double hv = Math.cos(
-            angle.in(Radians) * velocity.in(MetersPerSecond)
-        );
-
-        double vv = Math.sin(
-            angle.in(Radians) * velocity.in(MetersPerSecond)
-        );
-
-        double xVel = hv * Math.cos(robotPose.getRotation().toRotation2d().getRadians());
-        double yVel = hv * Math.sin(robotPose.getRotation().toRotation2d().getRadians());
+        double horizontalVel = Math.cos(angle.in(Radians)) * vel.in(MetersPerSecond);
+        double verticalVel = Math.sin(angle.in(Radians)) * vel.in(MetersPerSecond);
+        double xVel =
+                horizontalVel * Math.cos(robot.getRotation().toRotation2d().getRadians());
+        double yVel =
+                horizontalVel * Math.sin(robot.getRotation().toRotation2d().getRadians());
 
         xVel += fieldSpeeds.vxMetersPerSecond;
         yVel += fieldSpeeds.vyMetersPerSecond;
 
-        return new Translation3d(xVel, yVel, vv);
+        return new Translation3d(xVel, yVel, verticalVel);
     }
 
-    public void shootFuel(LinearVelocity velocity, Angle angle) {
+    public void launchFuel(LinearVelocity vel, Angle angle) {
         Pose3d robot = poseSupplier.get();
-        Translation3d initialPos = robot.getTranslation();
 
-        fuel.add(initialPos);
-        fuelVelocity.add(launchVel(velocity, angle));
+        Translation3d initialPosition = robot.getTranslation();
+        fuel.add(initialPosition);
+
+        fuelVelocities.add(launchVel(vel, angle));
     }
 
-    public void updateFuel(LinearVelocity velocity, Angle angle) {
-        double deltaTime = 0.02; // 20 ms update time
-        double gravity = 9.81; // m/s^2
+    public Command repeatedlyLaunchFuel(
+            Supplier<LinearVelocity> velSupplier, Supplier<Angle> angleSupplier, Turret turret) {
+        return turret.runOnce(() -> launchFuel(velSupplier.get(), angleSupplier.get()))
+                .andThen(Commands.waitSeconds(0.25))
+                .repeatedly();
+    }
+
+    public void updateFuel(LinearVelocity vel, Angle angle) {
+        double dt = 0.02; // 20 ms loop time
+        double g = 9.81; // gravity in m/s^2
 
         for (int i = 0; i < fuel.size(); i++) {
-            Translation3d pos = fuel.get(i);
-            Translation3d vel = fuelVelocity.get(i);
+            Translation3d position = fuel.get(i);
+            Translation3d velocity = fuelVelocities.get(i);
 
-            double newX = pos.getX() + vel.getX() * deltaTime;
-            double newY = pos.getY() + vel.getY() * deltaTime;
-            double newZ = pos.getZ() + vel.getZ() * deltaTime - 0.5 * gravity * deltaTime * deltaTime;
+            // Update position
+            double newX = position.getX() + velocity.getX() * dt;
+            double newY = position.getY() + velocity.getY() * dt;
+            double newZ = position.getZ() + velocity.getZ() * dt - 0.5 * g * dt * dt;
 
-            double newVz = vel.getZ() - gravity * deltaTime;
+            // Update velocity
+            double newVz = velocity.getZ() - g * dt;
 
             fuel.set(i, new Translation3d(newX, newY, newZ));
-            fuelVelocity.set(i, new Translation3d(vel.getX(), vel.getY(), newVz));
+            fuelVelocities.set(i, new Translation3d(velocity.getX(), velocity.getY(), newVz));
 
             // Remove fuel if it hits the ground
             if (newZ <= 0) {
                 fuel.remove(i);
-                fuelVelocity.remove(i);
-                i--;
+                fuelVelocities.remove(i);
+                i--; // Adjust index after removal
             }
         }
 
-        Translation3d trajVelocity = launchVel(velocity, angle);
+        Translation3d trajVel = launchVel(vel, angle);
         for (int i = 0; i < trajectory.length; i++) {
-            double t = i * deltaTime;
-            double x = trajVelocity.getX() * t;
-            double y = trajVelocity.getY() * t;
-            double z = trajVelocity.getZ() * t - 0.5 * gravity * t * t;
+            double t = i * 0.04;
+            double x = trajVel.getX() * t + poseSupplier.get().getTranslation().getX();
+            double y = trajVel.getY() * t + poseSupplier.get().getTranslation().getY();
+            double z = trajVel.getZ() * t
+                    - 0.5 * 9.81 * t * t
+                    + poseSupplier.get().getTranslation().getZ();
 
+            // Clamp z to ground
+            if (z < 0) {
+                z = 0;
+            }
+            
             trajectory[i] = new Translation3d(x, y, z);
         }
+    }
+
+    public void update3dPose(Angle azimuthAngle) {
     }
 }

@@ -82,18 +82,17 @@ public final class Constants {
 
   public static class TurretConstants {
     public static final Distance DistanceFromFunnel = Meters.of(1.5);
-    public static final Translation3d turretOffset = new Translation3d(
-          Meters.of(0.2),
-          Meters.of(0.0),
-          Meters.of(1.0)
-        );
+    public static final Translation3d turretOffset =
+        new Translation3d(Meters.of(0.2), Meters.of(0.0), Meters.of(1.0));
+    public static final edu.wpi.first.math.geometry.Transform3d ROBOT_TO_TURRET_TRANSFORM =
+        new edu.wpi.first.math.geometry.Transform3d(turretOffset, new edu.wpi.first.math.geometry.Rotation3d());
+
     public static final Distance highestHeight = Meters.of(2.5);
-    public static final Distance flywheelRadius = Meters.of(0.5);
-    public static final Distance shooterRadius = Meters.of(0.25);
-    
+    public static final Distance flywheelRadius = Inches.of(2);
+    public static final Distance shooterRadius = Inches.of(1.5);
+
     // Shot calculation parameters based on your Desmos math
-    public static final LinearVelocity BASE_VELOCITY = MetersPerSecond.of(31); // From your Desmos v=31
-    public static final Angle THETA_ERROR = Radians.of(Math.toRadians(3)); // θ_error from Desmos
-    public static final LinearVelocity VELOCITY_ERROR = MetersPerSecond.of(1.5); // v_error from Desmos
+    public static final LinearVelocity BASE_VELOCITY =
+        MetersPerSecond.of(15); 
   }
 }

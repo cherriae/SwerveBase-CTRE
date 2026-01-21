@@ -34,6 +34,8 @@ import frc.robot.Constants.SwerveConstants;
 import frc.robot.commands.Autos;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.Swerve;
+import frc.robot.subsystems.Turret.Turret;
+
 import java.lang.reflect.Field;
 
 /**
@@ -50,6 +52,8 @@ public class Robot extends TimedRobot {
   // subsystems
   @Logged(name = "Swerve")
   private final Swerve _swerve = TunerConstants.createDrivetrain();
+  @Logged(name = "Turret")
+  private final Turret _turret = new Turret(() -> _swerve.getState().Pose, () -> _swerve.getState().Speeds);
 
   private final Autos _autos = new Autos(_swerve);
 
